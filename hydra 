@@ -1,0 +1,10 @@
+hydra -l admin -p passlist.txt ftp://192.168.0.1
+
+
+hydra. ejecutor de la herramienta 
+-l.   la indicación del nombre de usuario 
+admin. el nombre de usuario del objetivo
+-p. la indicación del diccionario o clave
+passlist.txt. el diccionario o la clave
+ssh.  la ruta
+192.168.0.1 la dirección ip del objetivo 
