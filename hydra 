@@ -7,4 +7,10 @@ admin. el nombre de usuario del objetivo
 -p. la indicación del diccionario o clave
 passlist.txt. el diccionario o la clave
 ssh.  la ruta
-192.168.0.1 la dirección ip del objetivo 
+192.168.0.1 la dirección ip del objetivo
+
+
+nano passlist.txt
+python3 -m http.server 8080
+
+hydra -l gabriel -P passlist.txt 127.0.0.1 -s 8080 http-get / -t 4
