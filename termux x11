@@ -1,0 +1,13 @@
+pkg install x11-repo -y
+pkg install termux-x11-nightly xfce4 xfce4-terminal -y
+
+termux-x11 :1 &
+export DISPLAY=:1
+xfce4-session
+
+sudo apt-get update && sudo apt-get install -y xfce4 xfce4-goodies xfce4-panel-profiles
+
+sudo apt-get install -y papirus-icon-theme
+
+sudo apt-get install -y chromium
+
