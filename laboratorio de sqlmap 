@@ -1,0 +1,114 @@
+app_db.py
+
+
+import sqlite3
+from flask import Flask, request, render_template_string, session, redirect, url_for
+
+app = Flask(__name__)
+app.secret_key = 'super_secret_lab_key'
+
+def init_db():
+    conn = sqlite3.connect('mega_lab.db')
+    cursor = conn.cursor()
+    # Tabla de usuarios con credenciales y datos sensibles
+    cursor.execute('CREATE TABLE IF NOT EXISTS users (id INTEGER PRIMARY KEY, username TEXT, password TEXT, role TEXT, credit_card TEXT)')
+    # Tabla de notas secretas de la empresa
+    cursor.execute('CREATE TABLE IF NOT EXISTS secrets (id INTEGER PRIMARY KEY, title TEXT, content TEXT)')
+    
+    # Datos de prueba
+    cursor.execute("INSERT OR IGNORE INTO users (id, username, password, role, credit_card) VALUES (1, 'admin', 'AdminPass123!', 'Administrator', '4532-8811-9922-1029')")
+    cursor.execute("INSERT OR IGNORE INTO users (id, username, password, role, credit_card) VALUES (2, 'gabriel', 'TermuxSec2026', 'Pentester', '4221-5566-7788-9900')")
+    cursor.execute("INSERT OR IGNORE INTO secrets (id, title, content) VALUES (1, 'Proyecto Zeus', 'La clave de cifrado del servidor central es FLAG{Mega_SQLMap_Master_2026}')")
+    
+    conn.commit()
+    conn.close()
+
+# HTML del Panel de Login y Búsqueda
+HTML_TEMPLATE = '''
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Laboratorio Avanzado de Pentesting</title>
+    <style>
+        body { font-family: Arial, sans-serif; background: #0f172a; color: #f8fafc; padding: 30px; }
+        .box { background: #1e293b; padding: 20px; border-radius: 8px; max-width: 600px; margin: auto; box-shadow: 0 4px 6px rgba(0,0,0,0.3); }
+        input, button { padding: 10px; margin: 5px 0; width: 100%; box-sizing: border-box; background: #334155; border: 1px solid #475569; color: white; border-radius: 4px; }
+        button { background: #3b82f6; cursor: pointer; font-weight: bold; }
+        button:hover { background: #2563eb; }
+        .result { background: #0f172a; padding: 10px; margin-top: 15px; border-left: 4px solid #3b82f6; }
+    </style>
+</head>
+<body>
+    <div class="box">
+        <h2>Panel de Autenticación (Vulnerable a SQLi)</h2>
+        <form method="POST" action="/login">
+            <label>Usuario:</label>
+            <input type="text" name="username" placeholder="Introduce tu usuario">
+            <label>Contraseña:</label>
+            <input type="password" name="password" placeholder="Introduce tu contraseña">
+            <button type="submit">Iniciar Sesión</button>
+        </form>
+        {% if login_error %}
+            <p style="color: #ef4444;">{{ login_error }}</p>
+        {% endif %}
+        
+        <hr style="border-color: #334155; margin: 20px 0;">
+
+        <h2>Buscador de Perfiles (Vulnerable por GET)</h2>
+        <form method="GET" action="/">
+            <label>ID de Usuario:</label>
+            <input type="text" name="id" value="{{ request.args.get('id', '1') }}">
+            <button type="submit">Buscar Perfil</button>
+        </form>
+        
+        <div class="result">
+            <h3>Resultado de la consulta:</h3>
+            <p>{{ output | safe }}</p>
+        </div>
+    </div>
+</body>
+</html>
+'''
+
+@app.route('/', methods=['GET'])
+def index():
+    user_id = request.args.get('id', '1')
+    conn = sqlite3.connect('mega_lab.db')
+    cursor = conn.cursor()
+    output = ""
+    try:
+        # VULNERABILIDAD 1: Inyección SQL clásica por parámetro GET
+        query = f"SELECT id, username, role FROM users WHERE id = {user_id}"
+        cursor.execute(query)
+        res = cursor.fetchall()
+        output = f"Registros encontrados: {res}"
+    except Exception as e:
+        output = f"Error de SQL: {e}"
+    conn.close()
+    return render_template_string(HTML_TEMPLATE, output=output)
+
+@app.route('/login', methods=['POST'])
+def login():
+    username = request.form.get('username', '')
+    password = request.form.get('password', '')
+    conn = sqlite3.connect('mega_lab.db')
+    cursor = conn.cursor()
+    
+    # VULNERABILIDAD 2: Inyección SQL de autenticación (Auth Bypass) en POST
+    query = f"SELECT * FROM users WHERE username = '{username}' AND password = '{password}'"
+    try:
+        cursor.execute(query)
+        user = cursor.fetchone()
+    except Exception as e:
+        conn.close()
+        return render_template_string(HTML_TEMPLATE, output=f"Error en consulta: {e}", login_error=str(e))
+    
+    conn.close()
+    if user:
+        return f"<h1 style='color: #22c55e;'>¡Bienvenido al sistema, {user[1]}! Rol: {user[3]}</h1><p>Tarjeta de crédito: {user[4]}</p><a href='/'>Volver</a>"
+    else:
+        return render_template_string(HTML_TEMPLATE, output="Credenciales incorrectas", login_error="Usuario o contraseña inválidos")
+
+if __name__ == '__main__':
+    init_db()
+    app.run(host='127.0.0.1', port=5000)
