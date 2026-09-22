@@ -5,7 +5,7 @@ termux-x11 :1 &
 export DISPLAY=:1
 xfce4-session
 
-sudo apt-get update && sudo apt-get install -y xfce4 xfce4-goodies xfce4-panel-profiles
+apt-get update && apt-get install -y xfce4 xfce4-goodies xfce4-panel-profiles
 
 sudo apt-get install -y papirus-icon-theme
 
