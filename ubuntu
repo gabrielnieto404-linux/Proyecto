@@ -1,0 +1,18 @@
+pd install ubuntu
+
+pd login ubuntu
+
+apt install xfce4 xfce4-goodies
+xfce4-terminal
+
+export DISPLAY=:0
+export XDG_RUNTIME_DIR=/tmp/runtime-root
+mkdir -p $XDG_RUNTIME_DIR
+chmod 700 $XDG_RUNTIME_DIR
+
+# Iniciar D-Bus y XFCE de forma limpia
+dbus-launch --exit-with-session startxfce4 &
+termux-x11 :0
+
+
+
