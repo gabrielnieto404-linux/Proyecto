@@ -1,0 +1,12 @@
+pkg install mariadb 
+mysql_install_db
+mysqld_safe -u root
+mysql
+show databases;
+mysql -u root
+use datos;
+create database datos;
+create table datos(email varchar(50), password varchar(50) );
+show tables;
+insert into datos (email, password) values ('goku@gmail.com', 'vegeta23');
+select * from datos;
